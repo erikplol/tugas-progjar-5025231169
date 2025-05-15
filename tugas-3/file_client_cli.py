@@ -13,8 +13,9 @@ def send_command(command_str=""):
     sock.connect(server_address)
     logging.warning(f"connecting to {server_address}")
     try:
+        command_str += "\r\n\r\n"
         logging.warning(f"sending message ")
-        sock.sendall(command_str.encode())
+        sock.sendall((command_str).encode())
         data_received = ""  # empty string
         while True:
             data = sock.recv(16)
