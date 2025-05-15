@@ -97,6 +97,7 @@ if __name__ == '__main__':
     remote_get('donalbebek.jpg')
     remote_upload('test_upload.jpg')
     os.remove('test_upload.jpg')
+    print("File test_upload.jpg pada local dihapus")
     print(os.listdir("."))
     remote_list()
     remote_get('test_upload.jpg')
