@@ -32,7 +32,7 @@ class FileInterface:
     def upload(self, params=[]):
         try:
             filename = params[0]
-            b64content = params[1]
+            b64content = params[1].strip()
             filepath = os.path.join(self.base_dir, filename)
             content = base64.b64decode(b64content)
             with open(filepath, 'wb') as fp:
