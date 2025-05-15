@@ -2,7 +2,7 @@ import socket
 import json
 import base64
 import logging
-import shlex
+import os
 
 server_address = ('0.0.0.0', 7777)
 
@@ -61,24 +61,22 @@ def remote_get(filename=""):
         return False
 
 
-def remote_upload(local_filename="", remote_filename=""):
+def remote_upload(filepath):
     try:
-        with open(local_filename, "rb") as f:
-            file_content = f.read()
-        encoded_content = base64.b64encode(file_content).decode('utf-8').strip()
+        with open(filepath, 'rb') as f:
+            encoded = base64.b64encode(f.read()).decode()
 
-        encoded_quoted = shlex.quote(encoded_content)
-
-        command_str = f"UPLOAD {remote_filename} {encoded_quoted}\r\n"
+        filename = os.path.basename(filepath)
+        command_str = f"UPLOAD {filename}||{encoded}\r\n\r\n"
         hasil = send_command(command_str)
-        if hasil and hasil['status'] == 'OK':
-            print(f"File '{local_filename}' berhasil di-upload sebagai '{remote_filename}'.")
+        if hasil['status'] == 'OK':
+            print(f"Berhasil upload file: {filename}")
             return True
         else:
-            print("Gagal upload file:", hasil.get('data', 'Unknown error'))
+            print(f"Gagal upload file: {hasil['data']}")
             return False
-    except FileNotFoundError:
-        print(f"File '{local_filename}' tidak ditemukan.")
+    except Exception as e:
+        print(f"Gagal upload file: {str(e)}")
         return False
 
 def remote_delete(remote_filename=""):
