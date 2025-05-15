@@ -19,17 +19,10 @@ class ProcessTheClient(threading.Thread):
         while True:
             try:
                 data = self.connection.recv(1024)
-                if not data:
-                    break
                 buffer += data.decode()
-
-                # tunggu sampai end marker '\r\n\r\n' diterima
-                if '\r\n\r\n' in buffer:
-                    full_message, buffer = buffer.split('\r\n\r\n', 1)
-                    logging.warning(f"received full message from {self.address}")
-                    hasil = fp.proses_string(full_message)
-                    hasil = hasil + '\r\n\r\n'
-                    self.connection.sendall(hasil.encode())
+                if not data:
+                    self.connection.sendall(buffer.encode())
+                    break
             except Exception as e:
                 logging.error(f"Error while processing client {self.address}: {e}")
                 break
