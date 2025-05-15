@@ -64,7 +64,7 @@ def remote_upload(local_filename="", remote_filename=""):
     try:
         with open(local_filename, "rb") as f:
             file_content = f.read()
-        encoded_content = base64.b64encode(file_content).decode()
+        encoded_content = base64.b64encode(file_content).decode('utf-8').strip()
 
         encoded_quoted = shlex.quote(encoded_content)
 
@@ -79,7 +79,6 @@ def remote_upload(local_filename="", remote_filename=""):
     except FileNotFoundError:
         print(f"File '{local_filename}' tidak ditemukan.")
         return False
-
 
 def remote_delete(remote_filename=""):
     command_str = f"DELETE {remote_filename}\r\n"
