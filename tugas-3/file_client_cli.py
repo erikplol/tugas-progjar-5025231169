@@ -97,7 +97,7 @@ if __name__ == '__main__':
     remote_get('donalbebek.jpg')
     remote_upload('test_upload.jpg')
     os.remove('test_upload.jpg')
-    os.listdir(".")
+    print(os.listdir("."))
     remote_list()
     remote_get('test_upload.jpg')
     remote_delete('test_upload.jpg')
