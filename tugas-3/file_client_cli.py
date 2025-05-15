@@ -2,6 +2,7 @@ import socket
 import json
 import base64
 import logging
+import shlex
 
 server_address = ('0.0.0.0', 7777)
 
@@ -64,7 +65,10 @@ def remote_upload(local_filename="", remote_filename=""):
         with open(local_filename, "rb") as f:
             file_content = f.read()
         encoded_content = base64.b64encode(file_content).decode()
-        command_str = f"UPLOAD {remote_filename} {encoded_content}\r\n"
+
+        encoded_quoted = shlex.quote(encoded_content)
+
+        command_str = f"UPLOAD {remote_filename} {encoded_quoted}\r\n"
         hasil = send_command(command_str)
         if hasil and hasil['status'] == 'OK':
             print(f"File '{local_filename}' berhasil di-upload sebagai '{remote_filename}'.")
@@ -93,7 +97,7 @@ if __name__ == '__main__':
 
     remote_list()
     remote_get('donalbebek.jpg')
-    remote_upload('test.txt', 'upload_test.txt')
+    remote_upload('files/test_upload.jpg', 'files/test_upload.jpg')
     remote_list()
-    remote_get('upload_test.txt')
-    remote_delete('upload_test.txt')
+    remote_get('test_upload.jpg')
+    remote_delete('test_upload.jpg')
