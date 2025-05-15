@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
     remote_list()
     remote_get('donalbebek.jpg')
-    remote_upload('files/test_upload.jpg', 'files/test_upload.jpg')
+    remote_upload('files/test_upload.jpg', 'test_upload.jpg')
     remote_list()
     remote_get('test_upload.jpg')
     remote_delete('test_upload.jpg')
