@@ -25,20 +25,26 @@ class FileProtocol:
     def proses_string(self, string_datamasuk=''):
         if string_datamasuk.upper().startswith("UPLOAD "):
             try:
-                lines = string_datamasuk.split('\r\n')
-                header = lines[0]
-                base64_data = '\r\n'.join(lines[1:]).strip()
+                # hapus \r\n\r\n
+                cleaned = string_datamasuk.strip()
+                # hapus "UPLOAD "
+                cleaned = cleaned[7:]
 
-                filename = header.split(' ', 1)[1].strip()
-                file_bytes = base64.b64decode(base64_data)
+                if "||" not in cleaned:
+                    return json.dumps(dict(status='ERROR', data='Format upload tidak valid'))
 
+                filename, base64_data = cleaned.split("||", 1)
+                filename = filename.strip()
+                base64_data = base64_data.strip()
+
+                # Simpan file
                 with open(f'files/{filename}', 'wb') as f:
-                    f.write(file_bytes)
+                    f.write(base64.b64decode(base64_data))
 
                 return json.dumps(dict(status='OK', data=f'File {filename} berhasil diupload'))
             except Exception as e:
                 return json.dumps(dict(status='ERROR', data=f'Gagal upload file: {str(e)}'))
-
+            
         # proses lainnya tetap seperti biasa (LIST, GET, DELETE)
         try:
             c = shlex.split(string_datamasuk)
