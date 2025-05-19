@@ -94,9 +94,9 @@ def main():
                         results = run_stress_test(op, size, c_pool)
                         success = sum(1 for r in results if r['status'] == 'OK')
                         fail = len(results) - success
-                        total_time = sum(r['time'] for r in results) / len(results)
                         total_bytes = sum(r['bytes'] for r in results)
-                        throughput = total_bytes / sum(r['time'] for r in results)
+                        total_time = sum(r['time'] for r in results if r['time'] > 0)
+                        throughput = total_bytes / total_time if total_time > 0 else 0
                         writer.writerow([
                             test_no, op, size, c_pool, s_pool,
                             round(total_time, 2), int(throughput),
