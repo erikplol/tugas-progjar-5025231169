@@ -81,7 +81,7 @@ def main():
     with open('stress_test_results.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([
-            'No', 'Operasi', 'Volume', 'Client Pool', 'Server Pool',
+            'Nomor', 'Operasi', 'Volume', 'Client Pool', 'Server Pool',
             'Waktu Total per Client (s)', 'Throughput per Client (B/s)',
             'Client Sukses', 'Client Gagal', 'Server Sukses', 'Server Gagal'
         ])
