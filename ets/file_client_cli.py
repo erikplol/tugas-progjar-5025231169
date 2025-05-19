@@ -64,21 +64,19 @@ def main(client_pools, server_pools):
         test_no = 1
         for op in operations:
             for size in sizes:
-                for c_pool in client_pools:
-                    for s_pool in server_pools:
-                        results = run_stress_test(op, size, c_pool)
-                        success = sum(1 for r in results if r.get('status') == 'OK')
-                        fail = len(results) - success
-                        total_bytes = sum(r.get('bytes', 0) for r in results)
-                        total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
-                        throughput = total_bytes / total_time if total_time > 0 else 0
-                        writer.writerow([
-                            test_no, op, size, c_pool, s_pool,
-                            round(total_time, 2), int(throughput),
-                            success, fail, success, fail
-                        ])
-                        print(f"Done test #{test_no} - {op} {size} C:{c_pool} S:{s_pool}")
-                        test_no += 1
+                results = run_stress_test(op, size, client_pools)
+                success = sum(1 for r in results if r.get('status') == 'OK')
+                fail = len(results) - success
+                total_bytes = sum(r.get('bytes', 0) for r in results)
+                total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
+                throughput = total_bytes / total_time if total_time > 0 else 0
+                writer.writerow([
+                    test_no, op, size, client_pools, server_pools,
+                    round(total_time, 2), int(throughput),
+                    success, fail, success, fail
+                ])
+                print(f"Done test #{test_no} - {op} {size} C:{client_pools} S:{server_pools}")
+                test_no += 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Stress test client-server file transfer")
