@@ -145,13 +145,16 @@ def main(client_pools, server_pools):
     operations = ['UPLOAD', 'DOWNLOAD']
     sizes = ['10MB', '50MB', '100MB']
 
-    with open('stress_test_results.csv', 'w', newline='') as csvfile:
+    if not os.path.exists('stress_test_results.csv'):
         writer = csv.writer(csvfile)
         writer.writerow([
             'Nomor', 'Operasi', 'Volume', 'Client Pool', 'Server Pool',
             'Waktu Total per Client (s)', 'Throughput per Client (B/s)',
             'Client Sukses', 'Client Gagal', 'Server Sukses', 'Server Gagal'
         ])
+
+    with open('stress_test_results.csv', 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
 
         test_no = 1
         for op in operations:
