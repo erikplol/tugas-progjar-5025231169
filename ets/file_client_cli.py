@@ -7,7 +7,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 
-SERVER_ADDRESS = ('127.0.0.1', 1231)
+SERVER_ADDRESS = ('172.16.16.101', 1231)
 TEST_FILES = {
     '10MB': 'file_10MB.dat',
     '50MB': 'file_50MB.dat',
