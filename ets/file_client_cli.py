@@ -30,40 +30,68 @@ def send_command(command_str):
     except Exception as e:
         return {'status': 'ERROR', 'data': str(e)}
 
-def upload_worker(filepath):
+def remote_get(filename=""):
+    command_str = f"GET {filename}\r\n"
+    hasil = send_command(command_str)
+    if hasil and hasil.get('status') == 'OK':
+        try:
+            namafile = hasil['data_namafile']
+            isifile = base64.b64decode(hasil['data_file'])
+            with open(namafile, 'wb+') as fp:
+                fp.write(isifile)
+            print(f"File '{namafile}' berhasil di-download.")
+            return {
+                'status': 'OK',
+                'filename': namafile,
+                'bytes': len(isifile)
+            }
+        except Exception as e:
+            print(f"Gagal menulis file: {str(e)}")
+            return {
+                'status': 'ERROR',
+                'error': str(e)
+            }
+    else:
+        print("Gagal mendapatkan file")
+        return {
+            'status': 'ERROR',
+            'error': hasil.get('data', 'Unknown error') if hasil else 'No response'
+        }
+
+def remote_upload(filepath):
     try:
         with open(filepath, 'rb') as f:
-            encoded = base64.b64encode(f.read()).decode()
-        filename = os.path.basename(filepath)
-        command = f"UPLOAD {filename}||{encoded}"
-        start = time.time()
-        result = send_command(command)
-        end = time.time()
-        return {
-            'status': result['status'],
-            'time': end - start,
-            'bytes': os.path.getsize(filepath) if result['status'] == 'OK' else 0
-        }
-    except Exception as e:
-        return {'status': 'ERROR', 'time': 0, 'bytes': 0}
+            file_bytes = f.read()
+            encoded = base64.b64encode(file_bytes).decode()
 
-def download_worker(filename):
-    command = f"GET {filename}"
-    start = time.time()
-    result = send_command(command)
-    end = time.time()
-    if result['status'] == 'OK':
+        filename = os.path.basename(filepath)
+        command_str = f"UPLOAD {filename}||{encoded}\r\n\r\n"
+        hasil = send_command(command_str)
+        if hasil and hasil.get('status') == 'OK':
+            print(f"Berhasil upload file: {filename}")
+            return {
+                'status': 'OK',
+                'filename': filename,
+                'bytes': len(file_bytes)
+            }
+        else:
+            print(f"Gagal upload file: {hasil.get('data', 'Unknown error')}")
+            return {
+                'status': 'ERROR',
+                'error': hasil.get('data', 'Unknown error')
+            }
+    except Exception as e:
+        print(f"Gagal upload file: {str(e)}")
         return {
-            'status': 'OK',
-            'time': end - start,
-            'bytes': len(base64.b64decode(result['data_file']))
+            'status': 'ERROR',
+            'error': str(e)
         }
-    return {'status': 'ERROR', 'time': 0, 'bytes': 0}
+
 
 def run_stress_test(operation, size, client_pool_size):
     filename = TEST_FILES[size]
     results = []
-    func = upload_worker if operation == 'UPLOAD' else download_worker
+    func = remote_upload if operation == 'UPLOAD' else remote_get
     target = filename if operation == 'UPLOAD' else os.path.basename(filename)
 
     with ThreadPoolExecutor(max_workers=client_pool_size) as executor:
