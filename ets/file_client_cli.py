@@ -29,10 +29,12 @@ def send_command(command_str):
             return json.loads(data_received)
     except Exception as e:
         return {'status': 'ERROR', 'data': str(e)}
-
 def remote_get(filename=""):
+    start_time = time.time()
     command_str = f"GET {filename}\r\n"
     hasil = send_command(command_str)
+    elapsed_time = time.time() - start_time
+
     if hasil and hasil.get('status') == 'OK':
         try:
             namafile = hasil['data_namafile']
@@ -43,22 +45,31 @@ def remote_get(filename=""):
             return {
                 'status': 'OK',
                 'filename': namafile,
-                'bytes': len(isifile)
+                'bytes': len(isifile),
+                'time': elapsed_time,
+                'error': None
             }
         except Exception as e:
             print(f"Gagal menulis file: {str(e)}")
             return {
                 'status': 'ERROR',
+                'filename': filename,
+                'bytes': 0,
+                'time': elapsed_time,
                 'error': str(e)
             }
     else:
         print("Gagal mendapatkan file")
         return {
             'status': 'ERROR',
+            'filename': filename,
+            'bytes': 0,
+            'time': elapsed_time,
             'error': hasil.get('data', 'Unknown error') if hasil else 'No response'
         }
 
 def remote_upload(filepath):
+    start_time = time.time()
     try:
         with open(filepath, 'rb') as f:
             file_bytes = f.read()
@@ -67,23 +78,34 @@ def remote_upload(filepath):
         filename = os.path.basename(filepath)
         command_str = f"UPLOAD {filename}||{encoded}\r\n\r\n"
         hasil = send_command(command_str)
+        elapsed_time = time.time() - start_time
+
         if hasil and hasil.get('status') == 'OK':
             print(f"Berhasil upload file: {filename}")
             return {
                 'status': 'OK',
                 'filename': filename,
-                'bytes': len(file_bytes)
+                'bytes': len(file_bytes),
+                'time': elapsed_time,
+                'error': None
             }
         else:
             print(f"Gagal upload file: {hasil.get('data', 'Unknown error')}")
             return {
                 'status': 'ERROR',
+                'filename': filename,
+                'bytes': 0,
+                'time': elapsed_time,
                 'error': hasil.get('data', 'Unknown error')
             }
     except Exception as e:
+        elapsed_time = time.time() - start_time
         print(f"Gagal upload file: {str(e)}")
         return {
             'status': 'ERROR',
+            'filename': filepath,
+            'bytes': 0,
+            'time': elapsed_time,
             'error': str(e)
         }
 
@@ -97,7 +119,25 @@ def run_stress_test(operation, size, client_pool_size):
     with ThreadPoolExecutor(max_workers=client_pool_size) as executor:
         futures = [executor.submit(func, target) for _ in range(client_pool_size)]
         for future in as_completed(futures):
-            results.append(future.result())
+            try:
+                result = future.result()
+                if not isinstance(result, dict):
+                    result = {
+                        'status': 'ERROR',
+                        'filename': target,
+                        'bytes': 0,
+                        'time': 0,
+                        'error': 'Invalid result format'
+                    }
+            except Exception as e:
+                result = {
+                    'status': 'ERROR',
+                    'filename': target,
+                    'bytes': 0,
+                    'time': 0,
+                    'error': str(e)
+                }
+            results.append(result)
     return results
 
 def main():
