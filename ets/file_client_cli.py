@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from multiprocessing import Pool
 import csv
 
+BUFFER_SIZE = 65536 # 64KB
 SERVER_ADDRESS = ('172.16.16.101', 1231)
 TEST_FILES = {
     '10MB': 'file_10MB.dat',
@@ -22,7 +23,7 @@ def send_command(command_str):
             sock.sendall((command_str + "\r\n\r\n").encode())
             data_received = ""
             while True:
-                data = sock.recv(4096)
+                data = sock.recv(65536)
                 if not data:
                     break
                 data_received += data.decode()
