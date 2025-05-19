@@ -6,6 +6,7 @@ import base64
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from multiprocessing import Pool
 import csv
 
 SERVER_ADDRESS = ('172.16.16.101', 1231)
@@ -140,6 +141,22 @@ def run_stress_test(operation, size, client_pool_size):
             results.append(result)
     return results
 
+def run_single_test(args):
+    test_no, op, size, client_pools, server_pools = args
+    results = run_stress_test(op, size, client_pools)
+    success = sum(1 for r in results if r.get('status') == 'OK')
+    fail = len(results) - success
+    total_bytes = sum(r.get('bytes', 0) for r in results)
+    total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
+    throughput = total_bytes / total_time if total_time > 0 else 0
+
+    row = [
+        test_no, op, size, client_pools, server_pools,
+        round(total_time, 2), int(throughput),
+        success, fail, success, fail
+    ]
+    print(f"Done test #{test_no} - {op} {size} C:{client_pools} S:{server_pools}")
+    return row
 
 def main(client_pools, server_pools):
     operations = ['UPLOAD', 'DOWNLOAD']
@@ -154,25 +171,19 @@ def main(client_pools, server_pools):
                 'Success Count', 'Fail Count', 'Success', 'Fail'
             ])
 
+    task_args = []
+    test_no = 1
+    for op in operations:
+        for size in sizes:
+            task_args.append((test_no, op, size, client_pools, server_pools))
+            test_no += 1
+
+    with Pool() as pool:
+        results = pool.map(run_single_test, task_args)
+
     with open('stress_test_results.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
-
-        test_no = 1
-        for op in operations:
-            for size in sizes:
-                results = run_stress_test(op, size, client_pools)
-                success = sum(1 for r in results if r.get('status') == 'OK')
-                fail = len(results) - success
-                total_bytes = sum(r.get('bytes', 0) for r in results)
-                total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
-                throughput = total_bytes / total_time if total_time > 0 else 0
-                writer.writerow([
-                    test_no, op, size, client_pools, server_pools,
-                    round(total_time, 2), int(throughput),
-                    success, fail, success, fail
-                ])
-                print(f"Done test #{test_no} - {op} {size} C:{client_pools} S:{server_pools}")
-                test_no += 1
+        writer.writerows(results)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Stress test client-server file transfer")
