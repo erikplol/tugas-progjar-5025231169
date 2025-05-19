@@ -29,6 +29,7 @@ def send_command(command_str):
             return json.loads(data_received)
     except Exception as e:
         return {'status': 'ERROR', 'data': str(e)}
+
 def remote_get(filename=""):
     start_time = time.time()
     command_str = f"GET {filename}\r\n"
@@ -41,7 +42,6 @@ def remote_get(filename=""):
             isifile = base64.b64decode(hasil['data_file'])
             with open(namafile, 'wb+') as fp:
                 fp.write(isifile)
-            print(f"File '{namafile}' berhasil di-download.")
             return {
                 'status': 'OK',
                 'filename': namafile,
@@ -50,7 +50,6 @@ def remote_get(filename=""):
                 'error': None
             }
         except Exception as e:
-            print(f"Gagal menulis file: {str(e)}")
             return {
                 'status': 'ERROR',
                 'filename': filename,
@@ -59,7 +58,6 @@ def remote_get(filename=""):
                 'error': str(e)
             }
     else:
-        print("Gagal mendapatkan file")
         return {
             'status': 'ERROR',
             'filename': filename,
@@ -81,7 +79,6 @@ def remote_upload(filepath):
         elapsed_time = time.time() - start_time
 
         if hasil and hasil.get('status') == 'OK':
-            print(f"Berhasil upload file: {filename}")
             return {
                 'status': 'OK',
                 'filename': filename,
@@ -90,7 +87,6 @@ def remote_upload(filepath):
                 'error': None
             }
         else:
-            print(f"Gagal upload file: {hasil.get('data', 'Unknown error')}")
             return {
                 'status': 'ERROR',
                 'filename': filename,
@@ -100,7 +96,6 @@ def remote_upload(filepath):
             }
     except Exception as e:
         elapsed_time = time.time() - start_time
-        print(f"Gagal upload file: {str(e)}")
         return {
             'status': 'ERROR',
             'filename': filepath,
@@ -108,7 +103,6 @@ def remote_upload(filepath):
             'time': elapsed_time,
             'error': str(e)
         }
-
 
 def run_stress_test(operation, size, client_pool_size):
     filename = TEST_FILES[size]
@@ -145,7 +139,7 @@ def main():
     sizes = ['10MB', '50MB', '100MB']
     client_pools = [1, 5, 50]
     server_pools = [1, 5, 50]
-    
+
     with open('stress_test_results.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([
@@ -160,10 +154,10 @@ def main():
                 for c_pool in client_pools:
                     for s_pool in server_pools:
                         results = run_stress_test(op, size, c_pool)
-                        success = sum(1 for r in results if r['status'] == 'OK')
+                        success = sum(1 for r in results if r.get('status') == 'OK')
                         fail = len(results) - success
-                        total_bytes = sum(r['bytes'] for r in results)
-                        total_time = sum(r['time'] for r in results if r['time'] > 0)
+                        total_bytes = sum(r.get('bytes', 0) for r in results)
+                        total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
                         throughput = total_bytes / total_time if total_time > 0 else 0
                         writer.writerow([
                             test_no, op, size, c_pool, s_pool,
