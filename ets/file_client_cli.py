@@ -146,12 +146,13 @@ def main(client_pools, server_pools):
     sizes = ['10MB', '50MB', '100MB']
 
     if not os.path.exists('stress_test_results.csv'):
-        writer = csv.writer(csvfile)
-        writer.writerow([
-            'Nomor', 'Operasi', 'Volume', 'Client Pool', 'Server Pool',
-            'Waktu Total per Client (s)', 'Throughput per Client (B/s)',
-            'Client Sukses', 'Client Gagal', 'Server Sukses', 'Server Gagal'
-        ])
+        with open('stress_test_results.csv', 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([
+                'Test No', 'Operation', 'Size', 'Client Pool',
+                'Server Pool', 'Total Time (s)', 'Throughput (B/s)',
+                'Success Count', 'Fail Count', 'Success', 'Fail'
+            ])
 
     with open('stress_test_results.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
