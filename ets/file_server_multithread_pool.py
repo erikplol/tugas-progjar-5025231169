@@ -3,7 +3,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from file_protocol import FileProtocol
 
-HOST = '127.0.0.1'
+HOST = '0.0.0.0'
 PORT = 1231
 BUFFER_SIZE = 1024
 

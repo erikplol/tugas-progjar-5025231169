@@ -4,7 +4,7 @@ from concurrent.futures import ProcessPoolExecutor
 from file_protocol import FileProtocol
 import multiprocessing
 
-HOST = '127.0.0.1'
+HOST = '0.0.0.0'
 PORT = 1231
 BUFFER_SIZE = 1024
 
