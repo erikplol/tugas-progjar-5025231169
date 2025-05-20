@@ -150,7 +150,7 @@ def run_single_test(args):
     fail = len(results) - success
     total_bytes = sum(r.get('bytes', 0) for r in results)
     total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
-    logging.update(f"Total bytes: {total_bytes}, Total time: {total_time}")
+    print(f"Total bytes: {total_bytes}, Total time: {total_time}")
     throughput = total_bytes / total_time if total_time > 0 else 0
 
     row = [
