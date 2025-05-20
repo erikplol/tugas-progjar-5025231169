@@ -19,19 +19,38 @@ TEST_FILES = {
 
 def send_command(command_str):
     try:
-        with socket.create_connection(SERVER_ADDRESS) as sock:
-            sock.sendall((command_str + "\r\n\r\n").encode())
+        with socket.create_connection(SERVER_ADDRESS, timeout=120) as sock:
+            sock.settimeout(120) 
+
+            print(f"[INFO] Sending command ({len(command_str)} bytes)...")
+            total_sent = 0
+            encoded = command_str.encode()
+            while total_sent < len(encoded):
+                sent = sock.send(encoded[total_sent:])
+                if sent == 0:
+                    raise RuntimeError("Socket connection broken during send")
+                total_sent += sent
+                if total_sent % (10 * 1024 * 1024) == 0:
+                    print(f"[INFO] Sent {total_sent} bytes...", flush=True)
+
             data_received = ""
             while True:
-                data = sock.recv(65536)
+                data = sock.recv(BUFFER_SIZE)
                 if not data:
                     break
                 data_received += data.decode()
                 if "\r\n\r\n" in data_received:
                     break
+
             return json.loads(data_received)
+
+    except socket.timeout:
+        print("[ERROR] Socket timeout while sending/receiving")
+        return {'status': 'ERROR', 'data': 'Timeout during communication'}
     except Exception as e:
+        print(f"[ERROR] Exception during send_command: {e}")
         return {'status': 'ERROR', 'data': str(e)}
+
     
 def remote_get(filename=""):
     start_time = time.time()
@@ -75,17 +94,29 @@ def remote_get(filename=""):
 def remote_upload(filepath):
     start_time = time.time()
     try:
+        filesize = os.path.getsize(filepath)
+        print(f"[INFO] Reading file: {filepath} ({filesize} bytes)")
+        
         with open(filepath, 'rb') as f:
             file_bytes = f.read()
+        
+        print("[INFO] Encoding file to base64...")
+        try:
             encoded = base64.b64encode(file_bytes).decode()
-
+        except Exception as e:
+            raise Exception(f"Base64 encoding failed: {e}")
+        
         filename = os.path.basename(filepath)
         command_str = f"UPLOAD {filename}||{encoded}\r\n\r\n"
+
+        if len(command_str) > 100_000_000: 
+            raise Exception("Command too large, possible base64 encoding issue")
+
         hasil = send_command(command_str)
         elapsed_time = time.time() - start_time
 
         if hasil and hasil.get('status') == 'OK':
-            print(f"Berhasil upload file: {filename}")
+            print(f"[SUCCESS] Uploaded file: {filename}")
             return {
                 'status': 'OK',
                 'filename': filename,
@@ -94,7 +125,7 @@ def remote_upload(filepath):
                 'error': None
             }
         else:
-            print(f"Gagal upload file: {hasil.get('data', 'Unknown error')}")
+            print(f"[ERROR] Upload failed: {hasil.get('data', 'Unknown error')}")
             return {
                 'status': 'ERROR',
                 'filename': filename,
@@ -102,9 +133,10 @@ def remote_upload(filepath):
                 'time': elapsed_time,
                 'error': hasil.get('data', 'Unknown error')
             }
+
     except Exception as e:
         elapsed_time = time.time() - start_time
-        print(f"Gagal upload file: {str(e)}")
+        print(f"[EXCEPTION] Upload failed: {str(e)}")
         return {
             'status': 'ERROR',
             'filename': filepath,
