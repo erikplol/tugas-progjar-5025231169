@@ -181,12 +181,11 @@ def main(client_pools, server_pools):
             task_args.append((test_no, op, size, client_pools, server_pools))
             test_no += 1
 
-    with Pool() as pool:
-        results = pool.map(run_single_test, task_args)
-
-    with open('stress_test_results.csv', 'a', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerows(results)
+    for args in task_args:
+        result = run_single_test(args)
+        with open('stress_test_results.csv', 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerows(result)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Stress test client-server file transfer")
