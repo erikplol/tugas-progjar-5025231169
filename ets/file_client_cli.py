@@ -176,8 +176,8 @@ def main(client_pools, server_pools):
 
     task_args = []
     test_no = 1
-    for op in operations:
-        for size in sizes:
+    for size in sizes:
+        for op in operations:
             task_args.append((test_no, op, size, client_pools, server_pools))
             test_no += 1
 
