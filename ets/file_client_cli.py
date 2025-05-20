@@ -6,9 +6,10 @@ import base64
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from multiprocessing import Pool
 import csv
 
-BUFFER_SIZE = 65536  # 64KB
+BUFFER_SIZE = 65536 # 64KB
 SERVER_ADDRESS = ('172.16.16.101', 1231)
 TEST_FILES = {
     '10MB': 'file_10MB.dat',
@@ -22,7 +23,7 @@ def send_command(command_str):
             sock.sendall((command_str + "\r\n\r\n").encode())
             data_received = ""
             while True:
-                data = sock.recv(BUFFER_SIZE)
+                data = sock.recv(65536)
                 if not data:
                     break
                 data_received += data.decode()
@@ -31,7 +32,7 @@ def send_command(command_str):
             return json.loads(data_received)
     except Exception as e:
         return {'status': 'ERROR', 'data': str(e)}
-
+    
 def remote_get(filename=""):
     start_time = time.time()
     command_str = f"GET {filename}\r\n"
@@ -57,7 +58,7 @@ def remote_get(filename=""):
             return {
                 'status': 'ERROR',
                 'filename': filename,
-                'bytes': -1,
+                'bytes': 0,
                 'time': elapsed_time,
                 'error': str(e)
             }
@@ -66,7 +67,7 @@ def remote_get(filename=""):
         return {
             'status': 'ERROR',
             'filename': filename,
-            'bytes': -1,
+            'bytes': 0,
             'time': elapsed_time,
             'error': hasil.get('data', 'Unknown error') if hasil else 'No response'
         }
@@ -84,7 +85,7 @@ def remote_upload(filepath):
         elapsed_time = time.time() - start_time
 
         if hasil and hasil.get('status') == 'OK':
-            print(f"Berhasil upload file: {filename} bytes: {len(file_bytes)}")
+            print(f"Berhasil upload file: {filename}")
             return {
                 'status': 'OK',
                 'filename': filename,
@@ -97,7 +98,7 @@ def remote_upload(filepath):
             return {
                 'status': 'ERROR',
                 'filename': filename,
-                'bytes': -1,
+                'bytes': 0,
                 'time': elapsed_time,
                 'error': hasil.get('data', 'Unknown error')
             }
@@ -107,7 +108,7 @@ def remote_upload(filepath):
         return {
             'status': 'ERROR',
             'filename': filepath,
-            'bytes': -1,
+            'bytes': 0,
             'time': elapsed_time,
             'error': str(e)
         }
@@ -127,16 +128,16 @@ def run_stress_test(operation, size, client_pool_size):
                     result = {
                         'status': 'ERROR',
                         'filename': target,
-                        'bytes': -1,
-                        'time': -1,
+                        'bytes': 0,
+                        'time': 0,
                         'error': 'Invalid result format'
                     }
             except Exception as e:
                 result = {
                     'status': 'ERROR',
                     'filename': target,
-                    'bytes': -1,
-                    'time': -1,
+                    'bytes': 0,
+                    'time': 0,
                     'error': str(e)
                 }
             results.append(result)
@@ -145,18 +146,16 @@ def run_stress_test(operation, size, client_pool_size):
 def run_single_test(args):
     test_no, op, size, client_pools, server_pools = args
     results = run_stress_test(op, size, client_pools)
-
     success = sum(1 for r in results if r.get('status') == 'OK')
     fail = len(results) - success
     total_bytes = sum(r.get('bytes', 0) for r in results)
-    total_time = sum(r.get('time', 0) for r in results)
-
+    total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
     print(f"Total bytes: {total_bytes}, Total time: {total_time}")
     throughput = total_bytes / total_time if total_time > 0 else 0
 
     row = [
         test_no, op, size, client_pools, server_pools,
-        round(total_time, 5), int(throughput),
+        round(total_time, 2), int(throughput),
         success, fail, success, fail
     ]
     print(f"Done test #{test_no} - {op} {size} C:{client_pools} S:{server_pools}")
@@ -175,26 +174,26 @@ def main(client_pools, server_pools):
                 'Success Client', 'Fail Client', 'Success Server', 'Fail Server'
             ])
 
+    task_args = []
     test_no = 1
-    all_results = []
-
     for op in operations:
         for size in sizes:
-            args = (test_no, op, size, client_pools, server_pools)
-            result = run_single_test(args)
-            all_results.append(result)
+            task_args.append((test_no, op, size, client_pools, server_pools))
             test_no += 1
+
+    with Pool() as pool:
+        results = pool.map(run_single_test, task_args)
 
     with open('stress_test_results.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerows(all_results)
+        writer.writerows(results)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Stress test client-server file transfer")
     parser.add_argument('--client-pool', type=int, default=1,
-                        help="Ukuran thread pool di sisi klien")
+                        help="Daftar ukuran client pool, contoh: 1,5,50")
     parser.add_argument('--server-pool', type=int, default=1,
-                        help="Ukuran thread pool di sisi server (untuk logging)")
+                        help="Daftar ukuran server pool, contoh: 1,5,50")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.WARNING)
