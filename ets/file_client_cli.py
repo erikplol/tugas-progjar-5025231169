@@ -186,6 +186,7 @@ def main(client_pools, server_pools):
         with open('stress_test_results.csv', 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(result)
+            csvfile.flush()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Stress test client-server file transfer")
