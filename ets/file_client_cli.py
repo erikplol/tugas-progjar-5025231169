@@ -32,6 +32,7 @@ def send_command(command_str):
             return json.loads(data_received)
     except Exception as e:
         return {'status': 'ERROR', 'data': str(e)}
+    
 def remote_get(filename=""):
     start_time = time.time()
     command_str = f"GET {filename}\r\n"
@@ -57,7 +58,7 @@ def remote_get(filename=""):
             return {
                 'status': 'ERROR',
                 'filename': filename,
-                'bytes': 0,
+                'bytes': -1,
                 'time': elapsed_time,
                 'error': str(e)
             }
@@ -66,7 +67,7 @@ def remote_get(filename=""):
         return {
             'status': 'ERROR',
             'filename': filename,
-            'bytes': 0,
+            'bytes': -1,
             'time': elapsed_time,
             'error': hasil.get('data', 'Unknown error') if hasil else 'No response'
         }
@@ -97,7 +98,7 @@ def remote_upload(filepath):
             return {
                 'status': 'ERROR',
                 'filename': filename,
-                'bytes': 0,
+                'bytes': -1,
                 'time': elapsed_time,
                 'error': hasil.get('data', 'Unknown error')
             }
@@ -107,7 +108,7 @@ def remote_upload(filepath):
         return {
             'status': 'ERROR',
             'filename': filepath,
-            'bytes': 0,
+            'bytes': -1,
             'time': elapsed_time,
             'error': str(e)
         }
@@ -127,16 +128,16 @@ def run_stress_test(operation, size, client_pool_size):
                     result = {
                         'status': 'ERROR',
                         'filename': target,
-                        'bytes': 0,
-                        'time': 0,
+                        'bytes': -1,
+                        'time': -1,
                         'error': 'Invalid result format'
                     }
             except Exception as e:
                 result = {
                     'status': 'ERROR',
                     'filename': target,
-                    'bytes': 0,
-                    'time': 0,
+                    'bytes': -1,
+                    'time': -1,
                     'error': str(e)
                 }
             results.append(result)
@@ -149,6 +150,7 @@ def run_single_test(args):
     fail = len(results) - success
     total_bytes = sum(r.get('bytes', 0) for r in results)
     total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
+    logging.update(f"Total bytes: {total_bytes}, Total time: {total_time}")
     throughput = total_bytes / total_time if total_time > 0 else 0
 
     row = [
@@ -169,7 +171,7 @@ def main(client_pools, server_pools):
             writer.writerow([
                 'Test No', 'Operation', 'Size', 'Client Pool',
                 'Server Pool', 'Total Time (s)', 'Throughput (B/s)',
-                'Success Count', 'Fail Count', 'Success', 'Fail'
+                'Success Client', 'Fail Client', 'Success Server', 'Fail Server'
             ])
 
     task_args = []
