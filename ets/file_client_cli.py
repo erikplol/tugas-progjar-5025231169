@@ -84,7 +84,7 @@ def remote_upload(filepath):
         elapsed_time = time.time() - start_time
 
         if hasil and hasil.get('status') == 'OK':
-            print(f"Berhasil upload file: {filename}")
+            print(f"Berhasil upload file: {filename} bytes: {len(file_bytes)}")
             return {
                 'status': 'OK',
                 'filename': filename,
@@ -148,8 +148,8 @@ def run_single_test(args):
 
     success = sum(1 for r in results if r.get('status') == 'OK')
     fail = len(results) - success
-    total_bytes = sum(r.get('bytes', 0) for r in results if r.get('bytes', 0) > 0)
-    total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
+    total_bytes = sum(r.get('bytes', 0) for r in results)
+    total_time = sum(r.get('time', 0) for r in results)
 
     print(f"Total bytes: {total_bytes}, Total time: {total_time}")
     throughput = total_bytes / total_time if total_time > 0 else 0
