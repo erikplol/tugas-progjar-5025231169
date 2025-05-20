@@ -6,10 +6,9 @@ import base64
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from multiprocessing import Pool
 import csv
 
-BUFFER_SIZE = 65536 # 64KB
+BUFFER_SIZE = 65536  # 64KB
 SERVER_ADDRESS = ('172.16.16.101', 1231)
 TEST_FILES = {
     '10MB': 'file_10MB.dat',
@@ -23,7 +22,7 @@ def send_command(command_str):
             sock.sendall((command_str + "\r\n\r\n").encode())
             data_received = ""
             while True:
-                data = sock.recv(65536)
+                data = sock.recv(BUFFER_SIZE)
                 if not data:
                     break
                 data_received += data.decode()
@@ -32,7 +31,7 @@ def send_command(command_str):
             return json.loads(data_received)
     except Exception as e:
         return {'status': 'ERROR', 'data': str(e)}
-    
+
 def remote_get(filename=""):
     start_time = time.time()
     command_str = f"GET {filename}\r\n"
@@ -146,10 +145,12 @@ def run_stress_test(operation, size, client_pool_size):
 def run_single_test(args):
     test_no, op, size, client_pools, server_pools = args
     results = run_stress_test(op, size, client_pools)
+
     success = sum(1 for r in results if r.get('status') == 'OK')
     fail = len(results) - success
-    total_bytes = sum(r.get('bytes', 0) for r in results)
+    total_bytes = sum(r.get('bytes', 0) for r in results if r.get('bytes', 0) > 0)
     total_time = sum(r.get('time', 0) for r in results if r.get('time', 0) > 0)
+
     print(f"Total bytes: {total_bytes}, Total time: {total_time}")
     throughput = total_bytes / total_time if total_time > 0 else 0
 
@@ -181,8 +182,9 @@ def main(client_pools, server_pools):
             task_args.append((test_no, op, size, client_pools, server_pools))
             test_no += 1
 
-    with Pool() as pool:
-        results = pool.map(run_single_test, task_args)
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(run_single_test, args) for args in task_args]
+        results = [f.result() for f in futures]
 
     with open('stress_test_results.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
@@ -191,9 +193,9 @@ def main(client_pools, server_pools):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Stress test client-server file transfer")
     parser.add_argument('--client-pool', type=int, default=1,
-                        help="Daftar ukuran client pool, contoh: 1,5,50")
+                        help="Ukuran thread pool di sisi klien")
     parser.add_argument('--server-pool', type=int, default=1,
-                        help="Daftar ukuran server pool, contoh: 1,5,50")
+                        help="Ukuran thread pool di sisi server (untuk logging)")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.WARNING)
