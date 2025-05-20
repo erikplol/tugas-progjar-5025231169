@@ -156,7 +156,7 @@ def run_single_test(args):
 
     row = [
         test_no, op, size, client_pools, server_pools,
-        round(total_time, 2), int(throughput),
+        round(total_time, 5), int(throughput),
         success, fail, success, fail
     ]
     print(f"Done test #{test_no} - {op} {size} C:{client_pools} S:{server_pools}")
@@ -175,20 +175,19 @@ def main(client_pools, server_pools):
                 'Success Client', 'Fail Client', 'Success Server', 'Fail Server'
             ])
 
-    task_args = []
     test_no = 1
+    all_results = []
+
     for op in operations:
         for size in sizes:
-            task_args.append((test_no, op, size, client_pools, server_pools))
+            args = (test_no, op, size, client_pools, server_pools)
+            result = run_single_test(args)
+            all_results.append(result)
             test_no += 1
-
-    with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(run_single_test, args) for args in task_args]
-        results = [f.result() for f in futures]
 
     with open('stress_test_results.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerows(results)
+        writer.writerows(all_results)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Stress test client-server file transfer")
