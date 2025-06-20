@@ -1,5 +1,6 @@
 import requests
 import os
+import logging
 
 class HttpClient:
     def __init__(self, base_url="http://localhost:8885"):
@@ -47,23 +48,32 @@ class HttpClient:
 
 if __name__ == "__main__":
     client = HttpClient()
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.info("Client HTTP dimulai.")
 
     # --- Contoh Penggunaan ---
 
     # 1. Melihat daftar file
+    logging.info("List file yang ada di server:")
     client.get_file_list()
 
     # 2. Mengunggah file
+    logging.info("Mengunggah file contoh...")
     dummy_file_name = "contoh_upload.txt"
     with open(dummy_file_name, "w") as f:
         f.write("Ini adalah file yang diunggah sebagai contoh.")
     client.upload_file(dummy_file_name)
-
+    logging.info("File contoh telah diunggah.")
+    
+    logging.info("Daftar file setelah upload:")
     client.get_file_list()
 
     # 3. Menghapus file
+    logging.info("Menghapus file contoh...")
     client.delete_file(dummy_file_name)
-
+    logging.info("File contoh telah dihapus.")
+    
+    logging.info("Daftar file setelah penghapusan:")
     client.get_file_list()
 
     # Menghapus file dummy lokal

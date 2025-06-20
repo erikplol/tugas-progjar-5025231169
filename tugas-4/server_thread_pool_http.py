@@ -23,12 +23,12 @@ def ProcessTheClient(connection,address):
                     rcv=rcv+d
                     if rcv[-2:]=='\r\n':
                         #end of command, proses string
-                        #logging.warning("data dari client: {}" . format(rcv))
+                        logging.warning("data dari client: {}" . format(rcv))
                         hasil = httpserver.proses(rcv)
                         #hasil akan berupa bytes
                         #untuk bisa ditambahi dengan string, maka string harus di encode
                         hasil=hasil+"\r\n\r\n".encode()
-                        #logging.warning("balas ke  client: {}" . format(hasil))
+                        logging.warning("balas ke  client: {}" . format(hasil))
                         #hasil sudah dalam bentuk bytes
                         connection.sendall(hasil)
                         rcv=""
@@ -50,11 +50,12 @@ def Server():
 
     my_socket.bind(('0.0.0.0', 8885))
     my_socket.listen(1)
+    logging.warning("server started on port 8885")
 
     with ThreadPoolExecutor(20) as executor:
         while True:
                 connection, client_address = my_socket.accept()
-                #logging.warning("connection from {}".format(client_address))
+                logging.warning("connection from {}".format(client_address))
                 p = executor.submit(ProcessTheClient, connection, client_address)
                 the_clients.append(p)
                 #menampilkan jumlah process yang sedang aktif
