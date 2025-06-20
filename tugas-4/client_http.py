@@ -3,7 +3,7 @@ import os
 import logging
 
 class HttpClient:
-    def __init__(self, base_url="http://localhost:8885"):
+    def __init__(self, base_url="http://172.16.16.101:8885"):
         self.base_url = base_url
 
     def get_file_list(self):
