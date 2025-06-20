@@ -11,7 +11,7 @@ BUFFER_SIZE = 65536  # 64KB
 def handle_client(conn_data):
     conn_data, addr = conn_data
     logging.warning(f"[PROCESS] Connection from {addr} established")
-    conn = conn_data
+    conn = conn_data    
     data_received = ''
     while True:
         data = conn.recv(BUFFER_SIZE)
